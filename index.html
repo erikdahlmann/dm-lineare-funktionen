@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineare Funktionen Trainer</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338ca;
+            --success: #10B981;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 30px; font-weight: 700; color: var(--primary); }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .card.completed { border: 3px solid var(--success); }
+        .card.completed::after {
+            content: '✓ Abgeschlossen';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .card-title { font-size: 1.5rem; font-weight: 600; }
+        .progress-indicator {
+            font-weight: bold; color: var(--text-muted);
+            background: #E5E7EB; padding: 5px 12px; border-radius: 20px;
+        }
+
+        /* --- Layout --- */
+        .exercise-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .canvas-container {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+        }
+        canvas { display: block; border-radius: 8px; }
+
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            justify-content: center;
+            padding-top: 20px;
+        }
+
+        /* --- Equation Inputs --- */
+        .equation-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: 'Times New Roman', Times, serif;
+            flex-wrap: wrap;
+        }
+
+        .input-box {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            background: #F9FAFB;
+        }
+        .input-box:focus {
+            outline: none; border-color: var(--primary); background: white;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            align-self: flex-start;
+        }
+        .btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn:active { transform: scale(0.98); }
+
+        .feedback-msg { min-height: 24px; font-size: 1rem; font-weight: 600; margin-top: 10px;}
+        .feedback-success { color: var(--success); }
+        .feedback-error { color: #EF4444; }
+
+        /* --- Task 2 Text --- */
+        .task-display {
+            font-family: 'Times New Roman', Times, serif; /* Mathematischer Look */
+            background: #EEF2FF;
+            color: var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.8rem; /* Größer für Brüche */
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #C7D2FE;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Hilfsklasse für schöne Brüche im Text (optional, hier einfach per String gelöst) */
+        .fraction-span {
+            display: inline-block;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.9em;
+        }
+
+        .instruction { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+
+        /* --- Fireworks --- */
+        #fireworks-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworks-canvas"></canvas>
+
+    <h1>Mathe Trainer: Lineare Funktionen</h1>
+
+    <div class="container">
+        
+        <!-- TEIL 1: ABLESEN -->
+        <div class="card" id="card-1">
+            <div class="card-header">
+                <div class="card-title">1. Funktion ablesen</div>
+                <div class="progress-indicator">Punkte: <span id="score-1">0</span> / 6</div>
+            </div>
+            
+            <div class="exercise-area">
+                <div class="canvas-container">
+                    <canvas id="canvas-1" width="400" height="400"></canvas>
+                </div>
+
+                <div class="controls">
+                    <p class="instruction">Bestimme die Funktionsgleichung. Trage Brüche wie z.B. 1/3 oder 5/2 ein.</p>
+                    
+                    <div class="equation-wrapper">
+                        <span>y = </span>
+                        <input type="text" class="input-box" id="input-m" placeholder="m">
+                        <span>· x + </span>
+                        <input type="text" class="input-box" id="input-b" placeholder="b">
+                    </div>
+                    <p style="font-size: 0.85rem; color:#6B7280; margin-top:-15px;">
+                        (Beispiel: Steigung 1/2 und y-Abschnitt -3)
+                    </p>
+
+                    <button class="btn" onclick="checkExercise1()">Überprüfen</button>
+                    <div id="feedback-1" class="feedback-msg"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEIL 2: ZEICHNEN -->
+        <div class="card" id="card-2">
+            <div class="card-header">
+                <div class="card-title">2. Funktion zeichnen</div>
+                <div class="progress-indicator">Punkte: <span id="score-2">0</span> / 6</div>
+            </div>
+
+            <div class="exercise-area">
+                <div class="controls" style="order: 2;">
+                    <div class="task-display" id="task-2-display">y = ...</div>
+                    <p class="instruction">
+                        Zeichne die Gerade in das Koordinatensystem, indem du <strong>zwei Punkte</strong> anklickst.
+                    </p>
+                    <div id="feedback-2" class="feedback-msg"></div>
+                </div>
+
+                <div class="canvas-container" style="order: 1;">
+                    <canvas id="canvas-2" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* --- KONFIGURATION & STATE --- */
+        const TARGET_SCORE = 6; // Geändert auf 6
+
+        const state = {
+            ex1: { currentM: 0, currentB: 0, score: 0, completed: false },
+            ex2: { currentM: 0, currentB: 0, score: 0, points: [], completed: false }
+        };
+
+        const CANVAS_SIZE = 400;
+        const RANGE = 10; 
+        const GRID_SIZE = CANVAS_SIZE / (RANGE * 2); 
+
+        /* --- HELFER FUNKTIONEN --- */
+        
+        // Findet den größten gemeinsamen Teiler (für Bruch-Vereinfachung)
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        function parseInput(str) {
+            if(!str) return NaN;
+            str = str.replace(',', '.').replace(/\s/g, '');
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                if (parts.length === 2) {
+                    const num = parseFloat(parts[0]);
+                    const den = parseFloat(parts[1]);
+                    if (den !== 0) return num / den;
+                }
+            }
+            return parseFloat(str);
+        }
+
+        function toPixel(x, y) {
+            return {
+                x: (x + RANGE) * GRID_SIZE,
+                y: (RANGE - y) * GRID_SIZE
+            };
+        }
+
+        function toMath(px, py) {
+            return {
+                x: (px / GRID_SIZE) - RANGE,
+                y: RANGE - (py / GRID_SIZE)
+            };
+        }
+
+        /* --- GENERATOR FUNKTION --- */
+        // Erzeugt zufällige m und b Werte
+        // m wird als Objekt { val: float, num: int, den: int } zurückgegeben
+        function generateRandomFunctionParams() {
+            // b: Ganzzahl zwischen -5 und 5
+            const b = Math.floor(Math.random() * 11) - 5; 
+
+            // m: Echter Bruchgenerator für Zufall
+            let num, den;
+            
+            // Wir wollen keine Steigung 0, und wir wollen nicht nur Integer.
+            // Zähler: -6 bis 6 (ohne 0)
+            do {
+                num = Math.floor(Math.random() * 13) - 6; 
+            } while (num === 0);
+
+            // Nenner: 1 bis 5 (für halbwegs "schöne" Brüche, aber zufällig)
+            den = Math.floor(Math.random() * 5) + 1;
+
+            // Bruch kürzen
+            const common = gcd(Math.abs(num), den);
+            num = num / common;
+            den = den / common;
+
+            // Prüfen, ob die Funktion "zeichenbar" ist (nicht zu steil und weit weg)
+            // Teste bei x=4 und x=-4
+            const mVal = num / den;
+            if (Math.abs(mVal * 4 + b) > 12) {
+                // Wenn es zu steil ist, Rekursion (neu würfeln)
+                return generateRandomFunctionParams();
+            }
+
+            return {
+                m: mVal,
+                mNum: num,
+                mDen: den,
+                b: b
+            };
+        }
+
+        /* --- ZEICHNEN --- */
+
+        function drawGrid(ctx) {
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            ctx.fillStyle = "white";
+            ctx.fillRect(0,0, CANVAS_SIZE, CANVAS_SIZE);
+
+            ctx.lineWidth = 1;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.font = "11px Arial";
+
+            for (let i = 0; i <= 2 * RANGE; i++) {
+                const pos = i * GRID_SIZE;
+                const value = i - RANGE;
+
+                // Vertikal
+                if (value === 0) ctx.strokeStyle = "#000000"; 
+                else ctx.strokeStyle = "#E5E7EB"; 
+                ctx.lineWidth = value === 0 ? 2 : 1;
+
+                ctx.beginPath(); ctx.moveTo(pos, 0); ctx.lineTo(pos, CANVAS_SIZE); ctx.stroke();
+
+                if (value !== 0 && value % 2 === 0) {
+                    ctx.fillStyle = "#6B7280";
+                    ctx.fillText(value, pos, CANVAS_SIZE/2 + 15);
+                }
+
+                // Horizontal
+                if (value === 0) ctx.strokeStyle = "#000000"; 
+                else ctx.strokeStyle = "#E5E7EB";
+                ctx.lineWidth = value === 0 ? 2 : 1;
+
+                ctx.beginPath(); ctx.moveTo(0, pos); ctx.lineTo(CANVAS_SIZE, pos); ctx.stroke();
+
+                let mathY = RANGE - i;
+                if (mathY !== 0 && mathY % 2 === 0) {
+                    ctx.fillStyle = "#6B7280";
+                    ctx.fillText(mathY, CANVAS_SIZE/2 - 15, pos);
+                }
+            }
+
+            ctx.fillStyle = "black";
+            ctx.font = "bold 12px Arial";
+            ctx.fillText("y", CANVAS_SIZE/2 + 10, 10);
+            ctx.fillText("x", CANVAS_SIZE - 10, CANVAS_SIZE/2 - 10);
+        }
+
+        function drawLineGraph(ctx, m, b, color = "#4F46E5", thickness = 3) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = thickness;
+            ctx.beginPath();
+            
+            let p1 = toPixel(-RANGE, m * (-RANGE) + b);
+            let p2 = toPixel(RANGE, m * RANGE + b);
+
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawPoint(ctx, x, y, color="#EF4444") {
+            const p = toPixel(x, y);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        /* --- AUFGABE 1 --- */
+
+        function initExercise1() {
+            if (state.ex1.completed) return;
+
+            const ctx = document.getElementById('canvas-1').getContext('2d');
+            drawGrid(ctx);
+
+            const params = generateRandomFunctionParams();
+            state.ex1.currentM = params.m;
+            state.ex1.currentB = params.b;
+
+            drawLineGraph(ctx, params.m, params.b);
+            
+            document.getElementById('input-m').value = '';
+            document.getElementById('input-b').value = '';
+            document.getElementById('feedback-1').textContent = '';
+        }
+
+        function checkExercise1() {
+            if (state.ex1.completed) return;
+
+            const inputM = parseInput(document.getElementById('input-m').value);
+            const inputB = parseInput(document.getElementById('input-b').value);
+            const feedback = document.getElementById('feedback-1');
+
+            if (isNaN(inputM) || isNaN(inputB)) {
+                feedback.className = "feedback-msg feedback-error";
+                feedback.textContent = "Bitte Zahlen oder Brüche (z.B. 1/2) eingeben.";
+                return;
+            }
+
+            const epsilon = 0.05;
+            const mCorrect = Math.abs(inputM - state.ex1.currentM) < epsilon;
+            const bCorrect = Math.abs(inputB - state.ex1.currentB) < epsilon;
+
+            if (mCorrect && bCorrect) {
+                state.ex1.score++;
+                document.getElementById('score-1').textContent = state.ex1.score;
+                feedback.className = "feedback-msg feedback-success";
+                feedback.textContent = "Richtig!";
+                
+                if (state.ex1.score >= TARGET_SCORE) {
+                    state.ex1.completed = true;
+                    document.getElementById('card-1').classList.add('completed');
+                    feedback.textContent = "Fertig! Weiter zu Aufgabe 2.";
+                    document.getElementById('input-m').disabled = true;
+                    document.getElementById('input-b').disabled = true;
+                    checkVictory();
+                } else {
+                    setTimeout(() => initExercise1(), 1200);
+                }
+            } else {
+                feedback.className = "feedback-msg feedback-error";
+                feedback.textContent = "Leider falsch.";
+            }
+        }
+
+        /* --- AUFGABE 2 --- */
+
+        function initExercise2() {
+            if (state.ex2.completed) return;
+
+            const ctx = document.getElementById('canvas-2').getContext('2d');
+            drawGrid(ctx);
+            state.ex2.points = [];
+
+            const params = generateRandomFunctionParams();
+            state.ex2.currentM = params.m;
+            state.ex2.currentB = params.b;
+
+            // --- String Formatierung für Bruchdarstellung ---
+            const mNum = params.mNum;
+            const mDen = params.mDen;
+            const b = params.b;
+
+            let term = "";
+
+            // Steigungsterm bauen
+            let mStr = "";
+            
+            // Fallunterscheidung für saubere Anzeige
+            if (mDen === 1) {
+                // Ganze Zahl
+                if (mNum === 1) mStr = "x";
+                else if (mNum === -1) mStr = "-x";
+                else mStr = `${mNum}x`;
+            } else {
+                // Bruch
+                let sign = "";
+                let absNum = Math.abs(mNum);
+                if (mNum < 0) sign = "-";
+                // Darstellung: - 5/2 x
+                mStr = `${sign} ${absNum}/${mDen} x`;
+            }
+
+            // b hinzufügen
+            if (b === 0) {
+                term = mStr;
+            } else if (b > 0) {
+                term = `${mStr} + ${b}`;
+            } else {
+                term = `${mStr} - ${Math.abs(b)}`;
+            }
+
+            // Leerzeichen säubern (z.B. am Anfang)
+            term = term.trim();
+            if (term.startsWith("+")) term = term.substring(1).trim();
+
+            document.getElementById('task-2-display').textContent = `y = ${term}`;
+            document.getElementById('feedback-2').textContent = '';
+        }
+
+        const canvas2 = document.getElementById('canvas-2');
+        
+        canvas2.addEventListener('mousedown', function(e) {
+            if (state.ex2.completed) return;
+            if (state.ex2.points.length >= 2) return; 
+
+            const rect = canvas2.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            let mathCoords = toMath(px, py);
+
+            let snapX = Math.round(mathCoords.x * 2) / 2;
+            let snapY = Math.round(mathCoords.y * 2) / 2;
+
+            state.ex2.points.push({x: snapX, y: snapY});
+            const ctx = canvas2.getContext('2d');
+            drawPoint(ctx, snapX, snapY);
+
+            if (state.ex2.points.length === 2) {
+                evaluateExercise2();
+            }
+        });
+
+        function evaluateExercise2() {
+            const p1 = state.ex2.points[0];
+            const p2 = state.ex2.points[1];
+            const ctx = document.getElementById('canvas-2').getContext('2d');
+            const feedback = document.getElementById('feedback-2');
+
+            if (p2.x === p1.x) {
+                feedback.className = "feedback-msg feedback-error";
+                feedback.textContent = "Keine Funktion (senkrechte Linie).";
+                setTimeout(() => initExercise2(), 1500);
+                return;
+            }
+
+            let mUser = (p2.y - p1.y) / (p2.x - p1.x);
+            let bUser = p1.y - mUser * p1.x;
+
+            drawLineGraph(ctx, mUser, bUser, "#F59E0B"); 
+
+            const epsilon = 0.05;
+            const correct = Math.abs(mUser - state.ex2.currentM) < epsilon && Math.abs(bUser - state.ex2.currentB) < epsilon;
+
+            if (correct) {
+                drawLineGraph(ctx, mUser, bUser, "#10B981", 4);
+                state.ex2.score++;
+                document.getElementById('score-2').textContent = state.ex2.score;
+                feedback.className = "feedback-msg feedback-success";
+                feedback.textContent = "Hervorragend!";
+
+                if (state.ex2.score >= TARGET_SCORE) {
+                    state.ex2.completed = true;
+                    document.getElementById('card-2').classList.add('completed');
+                    feedback.textContent = "Alle Aufgaben gelöst!";
+                    checkVictory();
+                } else {
+                    setTimeout(() => initExercise2(), 1200);
+                }
+            } else {
+                feedback.className = "feedback-msg feedback-error";
+                feedback.textContent = "Falsch. Hier ist die Lösung (Rot).";
+                drawLineGraph(ctx, state.ex2.currentM, state.ex2.currentB, "#EF4444", 2);
+                setTimeout(() => initExercise2(), 3000);
+            }
+        }
+
+        /* --- FIREWORKS --- */
+        function checkVictory() {
+            if (state.ex1.completed && state.ex2.completed) {
+                startFireworks();
+            }
+        }
+
+        function startFireworks() {
+            const canvas = document.getElementById('fireworks-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            let particles = [];
+            function Particle(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1; this.decay = Math.random() * 0.015 + 0.005;
+                this.gravity = 0.05;
+            }
+            Particle.prototype.update = function() {
+                this.x += this.vx; this.y += this.vy;
+                this.vy += this.gravity; this.alpha -= this.decay;
+            }
+            Particle.prototype.draw = function() {
+                ctx.save(); ctx.globalAlpha = this.alpha; ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            }
+            function createFirework() {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * (canvas.height * 0.6);
+                const colors = ['#FCD34D', '#EF4444', '#10B981', '#3B82F6', '#8B5CF6'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                for (let i = 0; i < 60; i++) particles.push(new Particle(x, y, color));
+            }
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (Math.random() < 0.03) createFirework();
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].draw();
+                    if (particles[i].alpha <= 0) particles.splice(i, 1);
+                }
+                requestAnimationFrame(loop);
+            }
+            loop();
+            const h1 = document.querySelector('h1');
+            h1.innerHTML = "🎉 GLÜCKWUNSCH! 🎉";
+            h1.style.color = "#10B981";
+            h1.style.transform = "scale(1.1)";
+            h1.style.transition = "0.5s";
+        }
+
+        /* --- INIT --- */
+        window.onload = function() {
+            initExercise1();
+            initExercise2();
+        };
+
+        window.addEventListener('resize', () => {
+            document.getElementById('fireworks-canvas').width = window.innerWidth;
+            document.getElementById('fireworks-canvas').height = window.innerHeight;
+        });
+
+    </script>
+<!-- rechtliches --><style>.erik-recht{font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-align:center;padding:18px 12px 22px;opacity:.75}.erik-recht a{color:inherit}@media print{.erik-recht{display:none}}</style><footer class="erik-recht"><a href="https://erikdahlmann.github.io/impressum.html">Impressum</a> · <a href="https://erikdahlmann.github.io/datenschutz.html">Datenschutz</a></footer><!-- /rechtliches --></body>
+</html>
