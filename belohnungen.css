@@ -1,0 +1,163 @@
+/* ============================================================
+   Belohnungs-Effekte – Aussehen
+   Eigener Namensraum "bel-", damit die Seite unberührt bleibt.
+   ============================================================ */
+
+/* Platz schaffen, damit die Leiste keinen Inhalt verdeckt */
+body{ padding-bottom:150px; }
+@media (max-width:560px){ body{ padding-bottom:130px; } }
+
+#bel-leiste{
+  position:fixed; left:50%; bottom:14px; transform:translateX(-50%);
+  z-index:99998;
+  background:rgba(255,255,255,.93);
+  backdrop-filter:blur(12px) saturate(1.3);
+  -webkit-backdrop-filter:blur(12px) saturate(1.3);
+  border:1px solid rgba(79,70,229,.18);
+  border-radius:18px;
+  box-shadow:0 8px 32px rgba(31,41,55,.16), 0 2px 6px rgba(31,41,55,.08);
+  padding:10px 14px 8px;
+  font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  width:min(640px, calc(100vw - 16px));
+  transition:transform .3s cubic-bezier(.2,.9,.3,1.3), box-shadow .3s;
+}
+#bel-leiste.wink{ transform:translateX(-50%) translateY(-8px) scale(1.03); }
+#bel-leiste.arbeitet{ opacity:.6; }
+
+.bel-kopf{
+  display:flex; align-items:center; gap:8px;
+  font-size:.82rem; font-weight:700; color:#4F46E5;
+  letter-spacing:.02em; margin-bottom:8px;
+}
+.bel-stern{ font-size:1rem; }
+.bel-text{ flex:1; }
+.bel-marken{
+  font-variant-numeric:tabular-nums; font-weight:800;
+  background:#E5E7EB; color:#6B7280;
+  min-width:1.6rem; text-align:center;
+  padding:2px 9px; border-radius:999px; font-size:.82rem;
+  transition:background .25s, color .25s, transform .25s;
+}
+.bel-marken.hat{ background:#10B981; color:#fff; transform:scale(1.08); }
+
+.bel-knoepfe{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+
+.bel-knopf{
+  flex:1 1 0; min-width:0;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 6px 7px;
+  border:1px solid #E5E7EB; border-radius:12px;
+  background:#F9FAFB; color:#9CA3AF;
+  font-family:inherit; font-size:.7rem; font-weight:600;
+  cursor:not-allowed; min-height:56px;
+  transition:transform .15s, background .2s, border-color .2s, box-shadow .2s;
+}
+.bel-knopf .bel-symbol{ font-size:1.25rem; line-height:1.1; filter:grayscale(1); opacity:.5; }
+.bel-knopf.offen{ color:#1F2937; border-color:#C7D2FE; background:#fff; }
+.bel-knopf.offen .bel-symbol{ filter:none; opacity:1; }
+.bel-knopf.offen:not([disabled]){ cursor:pointer; }
+.bel-knopf.offen:not([disabled]):hover{
+  background:#EEF2FF; border-color:#4F46E5; transform:translateY(-3px);
+  box-shadow:0 6px 16px rgba(79,70,229,.2);
+}
+.bel-knopf.offen:not([disabled]):active{ transform:translateY(-1px) scale(.97); }
+.bel-knopf:focus-visible{ outline:3px solid #F59E0B; outline-offset:2px; }
+.bel-knopf[disabled].offen{ opacity:.55; }
+
+@keyframes bel-pulsiert{
+  0%,100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(16,185,129,.55); }
+  50%    { transform:scale(1.09); box-shadow:0 0 0 12px rgba(16,185,129,0); }
+}
+.bel-knopf.pulsiert{ animation:bel-pulsiert .9s ease-in-out 2; border-color:#10B981; }
+
+.bel-fuss{
+  margin-top:7px; text-align:center; font-size:.7rem; color:#6B7280;
+  min-height:1.1em;
+}
+.bel-balken{
+  height:3px; margin-top:6px; border-radius:2px;
+  background:#E5E7EB; overflow:hidden;
+}
+.bel-balken i{
+  display:block; height:100%; border-radius:2px;
+  background:linear-gradient(90deg,#4F46E5,#10B981);
+  transform:scaleX(0); transform-origin:0 50%;
+}
+
+/* ---------- Meldung beim Freischalten ---------- */
+.bel-meldung{
+  position:fixed; left:50%; top:22px; transform:translate(-50%,-18px);
+  z-index:99999; max-width:min(420px, calc(100vw - 24px));
+  background:#1F2937; color:#fff;
+  padding:12px 18px; border-radius:14px;
+  font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  font-size:.88rem; line-height:1.45; text-align:center;
+  box-shadow:0 10px 34px rgba(0,0,0,.3);
+  opacity:0; transition:opacity .35s, transform .35s cubic-bezier(.2,.9,.3,1.3);
+  pointer-events:none;
+}
+.bel-meldung.da{ opacity:1; transform:translate(-50%,0); }
+.bel-meldung.neu{ background:linear-gradient(135deg,#4F46E5,#10B981); }
+.bel-meldung.fehler{ background:#B91C1C; }
+.bel-meldung b{ font-size:1rem; }
+
+/* ---------- Bühne ---------- */
+#bel-schicht{
+  position:fixed; inset:0; z-index:99995;
+  touch-action:none; opacity:1; transition:opacity .3s;
+}
+#bel-schicht.weg{ opacity:0; }
+#bel-leinwand{ position:absolute; left:0; top:0; display:block; }
+
+/* Während eines Leinwand-Effekts bleibt vom echten Seiteninhalt nichts
+   stehen – nur Bühne und Leiste. */
+body.bel-versteckt > *:not(#bel-schicht):not(#bel-leiste):not(.bel-meldung){
+  visibility:hidden !important;
+}
+
+#bel-stopp{
+  position:absolute; right:14px; top:14px; z-index:2;
+  padding:8px 16px; border:0; border-radius:999px;
+  background:rgba(31,41,55,.82); color:#fff;
+  font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  font-size:.82rem; font-weight:700; cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+#bel-stopp:hover{ background:#1F2937; }
+#bel-stopp:focus-visible{ outline:3px solid #F59E0B; outline-offset:2px; }
+
+#bel-uhr{
+  position:absolute; left:14px; top:14px; z-index:2;
+  width:44px; height:44px; pointer-events:none;
+}
+#bel-uhr svg{ width:44px; height:44px; transform:rotate(-90deg); }
+#bel-uhr circle{ fill:rgba(31,41,55,.55); stroke:rgba(255,255,255,.3); stroke-width:3; }
+#bel-uhr #bel-uhr-ring{ fill:none; stroke:#10B981; stroke-width:3; stroke-linecap:round; }
+#bel-uhr span{
+  position:absolute; inset:0; display:grid; place-items:center;
+  color:#fff; font-family:'Segoe UI',Roboto,sans-serif;
+  font-size:.95rem; font-weight:800;
+}
+
+@media (max-width:560px){
+  /* Platz schaffen, damit die Leiste keinen Inhalt verdeckt */
+body{ padding-bottom:150px; }
+@media (max-width:560px){ body{ padding-bottom:130px; } }
+
+#bel-leiste{ bottom:6px; padding:8px 10px 6px; border-radius:14px; }
+  .bel-knopf{ flex:1 1 0; min-width:0; font-size:.6rem; padding:6px 3px; min-height:50px; }
+  .bel-knopf .bel-name{ display:none; }
+  .bel-knopf .bel-symbol{ font-size:1.35rem; }
+  .bel-fuss{ font-size:.66rem; }
+}
+
+@media print{ #bel-leiste,#bel-schicht,.bel-meldung{ display:none !important; } }
+
+/* Während der Schwerkraft verschwinden die Kartenflächen, damit die
+   herausfallenden Teile frei im Raum purzeln. */
+.card.bel-leer{
+  background:transparent !important;
+  box-shadow:none !important;
+  border-color:transparent !important;
+}
+.card.bel-leer::after{ display:none !important; }

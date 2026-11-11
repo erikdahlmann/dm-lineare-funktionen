@@ -180,6 +180,8 @@
             pointer-events: none; z-index: 9999;
         }
     </style>
+    <!-- Belohnungs-Effekte -->
+    <link rel="stylesheet" href="belohnungen.css">
 </head>
 <body>
 
@@ -443,6 +445,7 @@
                 document.getElementById('score-1').textContent = state.ex1.score;
                 feedback.className = "feedback-msg feedback-success";
                 feedback.textContent = "Richtig!";
+                if (window.Belohnung) Belohnung.gewonnen();
                 
                 if (state.ex1.score >= TARGET_SCORE) {
                     state.ex1.completed = true;
@@ -565,6 +568,7 @@
                 document.getElementById('score-2').textContent = state.ex2.score;
                 feedback.className = "feedback-msg feedback-success";
                 feedback.textContent = "Hervorragend!";
+                if (window.Belohnung) Belohnung.gewonnen();
 
                 if (state.ex2.score >= TARGET_SCORE) {
                     state.ex2.completed = true;
@@ -650,5 +654,9 @@
         });
 
     </script>
+<!-- Belohnungs-Effekte -->
+<script src="html2canvas.min.js"></script>
+<script src="belohnungen.js"></script>
+
 <!-- rechtliches --><style>.erik-recht{font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-align:center;padding:18px 12px 22px;opacity:.75}.erik-recht a{color:inherit}@media print{.erik-recht{display:none}}</style><footer class="erik-recht"><a href="https://erikdahlmann.github.io/impressum.html">Impressum</a> · <a href="https://erikdahlmann.github.io/datenschutz.html">Datenschutz</a></footer><!-- /rechtliches --></body>
 </html>
